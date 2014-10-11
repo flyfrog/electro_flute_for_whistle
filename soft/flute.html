@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset=utf-8 />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<style type="text/css">
+body {
+    margin: 10px;
+    font-family: sans-serif;
+    font-size: 16px;
+    color: #00AEFF;
+    width: 300px;
+}
+h2 {
+    font-size: 22px;
+    padding-bottom: 10px;
+}
+label {
+    font-size: 14px;
+    padding-top: 20px;
+    color: #666;
+}
+.Btns {
+    padding: 5px;
+    font-size: 14px;
+    width: 90px;
+    color: #00AEFF;
+}
+.container {
+    background-color: #f7f7f7;
+    padding: 10px;
+    border: 1px dotted #CCC;
+    width: 280px;
+    margin: 20px 0 40px 0;
+    padding-top: 10px;
+}
+.btnContainer {
+    margin-top: 20px;
+}
+#angle {
+    width: 50px;
+}
+
+
+.squad {
+    background-color: #66ccff;
+ 
+  
+    width: 50px; height: 50px;
+    margin: 20px;
+ 
+}
+
+.squad_air {
+    position: absolute;
+    left: 100px;
+    top: 20px;
+
+    background-color: #F11919;
+ 
+  
+    width: 20px; height: 400px;
+  
+ 
+}
+
+.save_area{
+    position: absolute;
+    left: 300px;
+    top: 20px;
+
+ 
+ 
+  
+ 
+  
+ 
+}
+</style>
+
+<title>Servo Example</title>
+
+<!-- The following (socket.io.js) is only required when using the node_server -->
+<script src="../../socket.io/socket.io.js"></script>
+<script src="../../dist/Breakout.min.js"></script>
+<script src="../libs/jquery.min.js"></script>
+<script type="text/javascript">
+var d = function(x){return document.getElementById(x);}
+    var key1 = 0;
+    var key2 = 0;
+    var key3 = 0;
+    var key4 = 0;
+    var key5 = 0;
+    var key6 = 0; 
+    var servo1;
+    var servo2;
+    var servo3;
+    var servo4;
+    var servo5;
+    var servo6;
+    
+    var hole1,hole2,hole3,hole4,hole5,hole6; // клапана к сервам 1 закрыт 0 открыто
+    var air = 0; // закрыть откр воздуховод
+
+    var ang_ = new Array(45,55);//down , hight градус серв
+    var ang_troat = new Array(0,30); // перекрыть глотку
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+$(document).ready(function() { // +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 
+    var IOBoard = BO.IOBoard;
+    var IOBoardEvent = BO.IOBoardEvent;
+    var Servo = BO.io.Servo;
+    var Potentiometer = BO.io.Potentiometer;
+    var PotEvent = BO.io.PotEvent;
+ 
+    BO.enableDebugging = true;  
+ 
+    var host = window.location.hostname;
+    // if the file is opened locally, set the host to "localhost"
+    if (window.location.protocol.indexOf("file:") === 0) {
+        host = "localhost";
+    }
+    var arduino = new IOBoard(host, 8887);
+    
+ 
+    arduino.addEventListener(IOBoardEvent.READY, onReady);
+
+    function onReady(event) {
+ 
+        arduino.removeEventListener(IOBoardEvent.READY, onReady);
+
+ 
+        servo1 = new Servo(arduino, arduino.getDigitalPin(2)); // перекрывает глотку
+        servo2 = new Servo(arduino, arduino.getDigitalPin(3));
+        servo3 = new Servo(arduino, arduino.getDigitalPin(4));
+        servo4 = new Servo(arduino, arduino.getDigitalPin(5));
+        servo5 = new Servo(arduino, arduino.getDigitalPin(6));
+ 
+ 
+         servo1.angle = 90;
+         servo2.angle = 90;
+         servo3.angle = 90;
+         servo4.angle = 90;
+         servo5.angle = 90;                
+    }
+    
+ $(document).keypress(function(eventObject){
+ key_press(eventObject.which); // замена переменных key
+ //hole_control(); //  открыть закрыть клапана
+ //draw_flute(); // отрисовака в div
+});
+ $(document).keyup(function(eventObject){
+ key_up(eventObject.which);// замена переменных key
+ //hole_control(); // открыть закрыть клапана
+ //draw_flute(); // отрисовака в div
+});
+}); // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+function key_press(key){//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 
+if(key==122){key1=1;}//z 1
+if(key==120){key2=1;}//x 2
+if(key==99) {key3=1;}//c 3
+
+if(key==116){key4=1;}//t 4
+if(key==121){key5=1;}//y 5
+if(key==117){key6=1;}//v 6
+if(save_flag==1){save("down",key);}
+
+ hole_control(); //  открыть закрыть клапана
+}//key_pess 
+
+function key_up(key){
+if(key==90){key1=0;}//z 1
+if(key==88){key2=0;}//x 2
+if(key==67) {key3=0;}//c 3
+
+if(key==84){key4=0;}//t 4
+if(key==89){key5=0;}//y 5
+if(key==85){key6=0;}//v 6
+
+if(save_flag==1){save("up",key);}
+
+ hole_control(); //  открыть закрыть клапана
+}//key_up^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+function hole_control(){
+hole2=0;hole3=0;hole4=0;hole5=0; // обнулить клапана 
+air=0; //закрыть подачу воздуха
+ 
+  if(key5==1){
+     hole5=1;hole4=1;hole3=1;hole2=1; 
+ }//if key 5 
+  if(key4==1){
+     hole5=0;hole4=1;hole3=1;hole2=1; 
+ }//if key 4 
+  if(key3==1 ){
+    hole5=0;hole4=0;hole3=1;hole2=1; 
+ }//if key 3 
+  if(key2==1 ){
+   hole5=0;hole4=0;hole3=0;hole2=1; 
+ }//if key 2 
+  if(key1==1){
+ air = 1;   
+}// для глотки 
+
+
+draw_flute(); 
+ servo_go(); // запустить изменение угла
+}// hole_control
+
+ 
+function servo_go(){//************************************************
+servo1.angle =  ang_troat[air];
+// закрытие открытие нот
+servo2.angle = ang_[hole2];
+servo3.angle = ang_[hole3];
+servo4.angle = ang_[hole4];
+servo5.angle = ang_[hole5];
+}//servo_go ************************************************************
+
+
+function draw_flute(){ //__________________________________________________________________________________
+if(air==1){d("hole_air").style.backgroundColor="#12B412"; }else{d("hole_air").style.backgroundColor="#F11919";} 
+if(hole2==1){d("hole_2").style.backgroundColor="#990000"; }else{d("hole_2").style.backgroundColor="#66ccff";}
+if(hole3==1){d("hole_3").style.backgroundColor="#990000"; }else{d("hole_3").style.backgroundColor="#66ccff";}
+if(hole4==1){d("hole_4").style.backgroundColor="#990000"; }else{d("hole_4").style.backgroundColor="#66ccff";}
+if(hole5==1){d("hole_5").style.backgroundColor="#990000"; }else{d("hole_5").style.backgroundColor="#66ccff";}
+                    }//draw_flute --------------------------------------------------------------------------
+
+
+var timer; // for setInterval
+var se = 0; // step up 5 milisecond
+var save_flag=0;// save filter in event function
+var log = new Array();//all event bundle for record
+ 
+
+function record(){
+timer = setInterval(stepper,5);
+save_flag=1;
+}//record
+
+function save(eve,key){
+var obj = new Object;
+obj.eve = eve;
+obj.key = key;
+obj.sec = se;
+
+if(log.length!=-1){log[log.length] = obj;}else{log[0] = obj;}
+
+}//save
+function stepper(){
+se++; 
+    if(play_flag==1){ // если нужно воспроизвести
+    emulate_eve();  
+    }//if flag
+    
+}//stepper
+
+function emulate_eve(){
+if(log[play_ar_count]==undefined){ play_ar_count=0; se=0; }// тормозим когда лог кончился    
+
+if(se==log[play_ar_count].sec&&log[play_ar_count]!=undefined){
+ 
+    if(log[play_ar_count].eve=="up"){key_up(log[play_ar_count].key);}//up
+    if(log[play_ar_count].eve=="down"){key_press(log[play_ar_count].key);}//up
+    play_ar_count++; // проход по ячейкам событий
+}
+}//emulate
+
+
+
+function stop_(){// stop record log file
+save_flag=0;
+play_flag=0;
+play_ar_count=0;
+
+clearInterval(timer);
+se = 0;
+}//stop
+
+//key_press,key_up
+var play_flag=0;
+var play_ar_count=0;
+function play(){
+play_flag=1;
+timer = setInterval(stepper,5);
+ 
+}
+
+function save_in(){
+d("text_area").value = JSON.stringify(log);
+ //d("text_area").value = log.join("*");
+}//save in
+
+
+
+ 
+function load()//-----------------------------------
+{ 
+ 
+ 
+ $.ajax({
+        type: "GET",
+    url: d("song_file").value ,
+    dataType: "text",
+    success: function(val) {
+ log = JSON.parse(val);
+ //var ex = val.split("*");
+//alert(ex[6].sec);
+    }
+});
+ 
+
+ 
+
+
+ 
+}//end load---------------------------------------
+
+
+</script>
+
+</head>
+<body>
+<div id="hole_air" class="squad_air"> </div> 
+
+<div id="hole_1" class="squad" style="background-color:#990000;"> </div>
+<div id="hole_2" class="squad"> </div>
+<div id="hole_3" class="squad"> </div>
+<div id="hole_4" class="squad"> </div>
+<div id="hole_5" class="squad"> </div>
+<div id="hole_6" class="squad"> </div> 
+
+
+<div id="label" class="container">
+<button onclick="record()">record</button>
+<button onclick="stop_()">stop</button>
+<button onclick="play()">play</button>
+<button onclick="save_in()">save</button>
+</div>
+
+<div id="label_x"  >
+    </div>
+
+ <input id="song_file"  value=""><button onclick="load()">open</button>  
+
+
+ <textarea id="text_area" class="save_area" rows="10" cols="45" name="text"></textarea></p>  
+</body>
+</html>
